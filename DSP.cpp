@@ -67,8 +67,8 @@ void rearrange(cdouble* a, int N) {
 
 class DSP {
 	private:
-		cdouble*** W;//Cache the complex coefficients for 
-		cdouble* hannwindow;
+		cdouble*** W;//Cache the complex coefficients for the FFT
+		double* hannwindow;
 		int fftsize;
 
 		/**
@@ -102,7 +102,7 @@ class DSP {
 			for (int n = 0; n < N; n++) {
 				double angle = 2.0*M_PI * n / (double)(N - 1);
 				//Do a Hamming hannwindow for now
-				hannwindow[n] = 0.54 - 0.46*Math.cos(angle);
+				hannwindow[n] = 0.54 - 0.46*cos(angle);
 			}
 		}
 
@@ -146,7 +146,7 @@ class DSP {
 		cdouble fftres;
 		DSP(int fftsize) {
 			this->fftsize = fftsize;
-			this->initComplex(fftsize);
+			this->initCoeffs(fftsize);
 			this->initWindow(fftsize);
 		}
 		~DSP() {
@@ -174,8 +174,8 @@ class DSP {
 			for (int i = 0; i < N; i++) {
 				for (int j = 0; j < N; j++) {
 					double angle = -2.0 * M_PI * (double)i * (double)j / (double)N;
-					Complex coeff = new cdouble(cos(angle), sin(angle));
-					toReturn[i] = sig[i].mult(coeff);
+					cdouble coeff(cos(angle), sin(angle));
+					toReturn[i] = coeff*sig[i];
 				}
 			}
 			return toReturn;
@@ -192,7 +192,7 @@ class DSP {
 			for (int i = 0; i < N; i++) {
 				toReturn[i] = sig[i];
 			}
-			return performfft(toReturn, FFT_FORWARD);	
+			return performfft(toReturn, N, FFT_FORWARD);	
 		}
 	
 		/**
@@ -206,7 +206,7 @@ class DSP {
 			for (int i = 0; i < N; i++) {
 				toReturn[i] = sig[i];
 				//Scale by 1/N for inverse FFT
-				toReturn[i] *= complex(1.0/(double)N, 0);
+				toReturn[i] *= cdouble(1.0/(double)N, 0);
 			}
 			return performfft(toReturn, N, FFT_INVERSE);
 		}
@@ -219,7 +219,7 @@ class DSP {
 		 * @param len Length to go in the array
 		 * @param useWindow Whether to use the window
 		 */
-		complex* toWindowedComplexArray(short* data, int start, int len, bool useWindow) {
+		cdouble* toWindowedComplexArray(short* data, int start, int len, bool useWindow) {
 			int N = 1 << getClosestPowerOf2(len);
 			cdouble* toReturn = new cdouble[N];
 			//Make a complex array out of the real array
@@ -227,7 +227,7 @@ class DSP {
 				if (i < len) {
 					short value = data[start + i];
 					toReturn[i] = cdouble((double)value, 0.0);
-					if (window) {
+					if (useWindow) {
 						toReturn[i] *= hannwindow[i];
 					}
 				}
@@ -239,3 +239,10 @@ class DSP {
 			return toReturn;
 		}
 };
+
+int main() {
+	short s[1024];
+	for (short i = 0; i < 1024; i++) {
+		s[i] = i;
+	}
+}
