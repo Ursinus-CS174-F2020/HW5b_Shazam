@@ -32,7 +32,7 @@ wav_hdr getAudioHeader(char* filename) {
  * @param N Pointer to file size
  * @return Short array of audio samples
  */
-float* getAudio(char* filename, size_t* N) {
+short* getAudio(char* filename, size_t* N) {
     short* ret = NULL;
     wav_hdr wavHeader;
     FILE* wavFile = fopen(filename, "r");
@@ -51,7 +51,7 @@ float* getAudio(char* filename, size_t* N) {
             fprintf(stderr, "This library only handles 16-bit audio, but audio is %i-bit", wavHeader.bitsPerSample);
         }
         else {
-            vector<float> samples;
+            vector<short> samples;
             short chunk[AUDIO_CHUNK_SIZE];
             size_t bytesRead;
             *N = 0;
