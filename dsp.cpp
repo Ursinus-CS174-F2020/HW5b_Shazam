@@ -5,6 +5,7 @@
  */
 
 #include <complex>
+#include <iostream>
 #include <math.h>
 
 using namespace std;
@@ -239,10 +240,3 @@ class DSP {
 			return toReturn;
 		}
 };
-
-int main() {
-	short s[1024];
-	for (short i = 0; i < 1024; i++) {
-		s[i] = i;
-	}
-}
