@@ -9,6 +9,9 @@
 
 using namespace std;
 
+
+#define FFT_FORWARD 0
+#define FFT_INVERSE 1
 typedef complex<double> cdouble;
 
 /**
@@ -64,8 +67,6 @@ void rearrange(cdouble* a, int N) {
 
 class DSP {
 	private:
-		const int FORWARD = 0;
-		const int INVERSE = 1;
 		cdouble*** W;//Cache the complex coefficients for 
 		cdouble* hannwindow;
 		int fftsize;
@@ -76,7 +77,6 @@ class DSP {
 		 */
 		void initCoeffs(int fftsize) {
 			int maxlevel = getClosestPowerOf2(fftsize) + 1;
-			W = new Complex[maxlevel + 1][2][];
 			W = new cdouble**[maxlevel+1];
 			for (int level = 1; level <= maxlevel; level++) {
 				int FFTSize = 1 << level;
@@ -86,8 +86,8 @@ class DSP {
 				for (int i = 0; i < FFTSize >> 1; i++) {
 					double iangle = (double)i * 2.0 * M_PI / (double)FFTSize;
 					double fangle = (-1.0) * iangle;
-					W[level][FORWARD][i] = cdouble(cos(fangle), sin(fangle));
-					W[level][INVERSE][i] = cdouble(cos(iangle), sin(iangle)); 
+					W[level][FFT_FORWARD][i] = cdouble(cos(fangle), sin(fangle));
+					W[level][FFT_INVERSE][i] = cdouble(cos(iangle), sin(iangle)); 
 				}
 			}
 		}
@@ -109,16 +109,16 @@ class DSP {
 		/**
 		 * Perform an in-place Cooley-Tukey FFT
 		 * @param toReturn Array that holds FFT coefficients
-		 * @param N Length of array
+		 * @param N Length of array (assumed to be power of 2)
 		 * @param inverse Whether this is a forward or inverse FFT
 		 */
 		cdouble* performfft(cdouble* toReturn, int N, int inverse) {
 			rearrange(toReturn, N);
 			//Do the trivial FFT size of 2 first
 			for (int i = 0; i < N; i += 2) {
-				Complex temp = toReturn[i];
-				toReturn[i] = temp.add(toReturn[i + 1]);
-				toReturn[i + 1] = temp.subtract(toReturn[i + 1]);
+				cdouble temp = toReturn[i];
+				toReturn[i] = temp + toReturn[i + 1];
+				toReturn[i + 1] = temp - toReturn[i + 1];
 			}
 			int Mindex = 2;//Index used to access the cached complex
 			//coefficients
@@ -130,11 +130,11 @@ class DSP {
 					//to do in-place with the merging algorithm
 					//NOTE: "level" gives the length between mirrored terms
 					for (int i = 0; i < level; i++) {
-						Complex coeff = W[Mindex][inverse][i];
-						Complex first = toReturn[start + i];
-						Complex second = toReturn[start + i + level].mult(coeff);
-						toReturn[start + i] = first.add(second);
-						toReturn[start + i + level] = first.subtract(second);
+						cdouble coeff = W[Mindex][inverse][i];
+						cdouble first = toReturn[start + i];
+						cdouble second = coeff*toReturn[start + i + level];
+						toReturn[start + i] = first + second;
+						toReturn[start + i + level] = first - second;
 					}
 				}
 				Mindex++;
@@ -180,140 +180,62 @@ class DSP {
 			}
 			return toReturn;
 		}
-	
-	public Complex[] fft(Complex[] sig) {
-		Complex[] toReturn = new Complex[sig.length];
-		for (int i = 0; i < toReturn.length; i++)
-			toReturn[i] = sig[i].clone();
-		return performfft(toReturn, FORWARD);		
-	}
-	
-	public Complex[] ifft(Complex[] sig) {
-		Complex[] toReturn = new Complex[sig.length];
-		for (int i = 0; i < toReturn.length; i++) {
-			if (sig[i] != null)
-				toReturn[i] = sig[i].clone();
-			else
-				toReturn[i] = new Complex(0, 0);
-			//Scale by 1/N for inverse FFT
-			toReturn[i].scale(1.0 / (double)sig.length);
-		}
-		return performfft(toReturn, INVERSE);
-	}
 
-	
-	//Helper function to create a complex array out of an array of 
-	//real amplitude samples
-	public Complex[] toWindowedComplexArray(short[] data, int start, int len) {
-		int N = 1 << getClosestPowerOf2(len);
-		Complex[] toReturn = new Complex[N];
-		//Make a complex array out of the real array
-		for (int i = 0; i < N; i++) {
-			if (i < len) {
-				short value = data[start + i];
-				toReturn[i] = new Complex((double)value, 0.0);
-				//toReturn[i].scale(hannwindow[i]);
+		/**
+		 * Perform the FFT on a complex signal
+		 * @param sig The signal
+		 * @param N Length of the signal (assumed to be power of 2)
+		 * @return An N-length array with FFT coefficients
+		 */
+		cdouble* fft(cdouble* sig, int N) {
+			cdouble* toReturn = new cdouble[N];
+			for (int i = 0; i < N; i++) {
+				toReturn[i] = sig[i];
 			}
-			else
-				//Zero pad if not a power of 2 (this shouldn't happen)
-				toReturn[i] = new Complex(0.0, 0.0);
+			return performfft(toReturn, FFT_FORWARD);	
 		}
-		return toReturn;
-	}
 	
-	//Return the strongest bin
-	public int getStrongestBin(Complex[] spec, int minbin) {
-		double maxPower = 0.0;
-		int maxbin = 0;
-		//Only go up to the Nyquist Rate (spec.length / 2)
-		for (int i = minbin; i < spec.length / 2; i++) {
-			double power = spec[i].magSquared();
-			if (power > maxPower) {
-				maxPower = power;
-				maxbin = i;
+		/**
+		 * Perform the inverse FFT on an array of complex FFT coefficients
+		 * @param sig The FFT coefficients
+		 * @param N Length of the FFT coefficients (assumed to be power of 2)
+		 * @return An N-length array with FFT coefficients
+		 */
+		cdouble* ifft(cdouble* sig, int N) {
+			cdouble* toReturn = new cdouble[N];
+			for (int i = 0; i < N; i++) {
+				toReturn[i] = sig[i];
+				//Scale by 1/N for inverse FFT
+				toReturn[i] *= complex(1.0/(double)N, 0);
 			}
+			return performfft(toReturn, N, FFT_INVERSE);
 		}
-		return maxbin;
-	}
-	
-	public double getMean(byte[] data) {
-		double mean = 0.0;
-		for (int i = 0; i < data.length; i++) {
-			mean += (short)data[i];
-		}
-		mean /= (double)data.length;
-		return mean;
-	}
-	
-	public double getVariance(byte[] data) {
-		double mean = getMean(data);
-		double var = 0.0;
-		for (int i = 0; i < data.length; i++) {
-			double diff = (short)data[i] - mean;
-			var += diff*diff;
-		}
-		return Math.sqrt(var);
-	}
-	
-	public double getStrongestFreq(byte[] data, double sampleRate) {
-		short[] sdata = new short[data.length];
-		for (int i = 0; i < sdata.length; i++)
-			sdata[i] = (short)data[i];
-		Complex[] carray = toWindowedComplexArray(sdata, 0, sdata.length);
-		Complex[] spec = fft(carray);
-		int minbin = (int)((220.0 / 8000.0) * (double)data.length);
-		int strongestBin = getStrongestBin(spec, minbin);
-		fftres = spec;
-		return ((double)strongestBin / (double)data.length)*sampleRate;
-	}
-	
-	public int getMaxBin(byte[] data, double sampleRate, double centerFreq) {
-		short[] sdata = new short[data.length];
-		for (int i = 0; i < sdata.length; i++)
-			sdata[i] = (short)data[i];
-		Complex[] carray = toWindowedComplexArray(sdata, 0, sdata.length);
-		Complex[] spec = fft(carray);
-		fftres = spec;
 		
-		int bin = -2;
-		double maxSpec = 0.0;
-		int maxbin = -2;
-		//-12 to -7
-		//-7 to -2
-		//-2 to 3
-		//3 to 8
-		//8 to 13
-		for (int halfstep = -12; halfstep < 12; halfstep += 5) {
-			double freqLeft = centerFreq * Math.pow(2.0, (double)halfstep / 12.0);
-			double freqRight = centerFreq * Math.pow(2.0, (double)(halfstep+5) / 12.0);
-			int binLeft = (int)((freqLeft / sampleRate)*data.length);
-			int binRight = (int)((freqRight / sampleRate)*data.length);
-			//Now integrate the spectrum over that interval and average
-			double specPow = 0.0;
-			for (int i = binLeft; i < binRight; i++) {
-				specPow += spec[i].magSquared();
+		/**
+		 * Helper function to create a complex array out of an array of 
+		 * real amplitude samples
+		 * @param data An array of shorts for the audio data
+		 * @param start Index to start in the array
+		 * @param len Length to go in the array
+		 * @param useWindow Whether to use the window
+		 */
+		complex* toWindowedComplexArray(short* data, int start, int len, bool useWindow) {
+			int N = 1 << getClosestPowerOf2(len);
+			cdouble* toReturn = new cdouble[N];
+			//Make a complex array out of the real array
+			for (int i = 0; i < N; i++) {
+				if (i < len) {
+					short value = data[start + i];
+					toReturn[i] = cdouble((double)value, 0.0);
+					if (window) {
+						toReturn[i] *= hannwindow[i];
+					}
+				}
+				else {
+					//Zero pad if not a power of 2
+					toReturn[i] = cdouble(0.0, 0.0);
+				}
 			}
-			specPow /= (binRight - binLeft);
-			if (specPow > maxSpec) {
-				maxSpec = specPow;
-				maxbin = bin;
-			}
-			bin++;
+			return toReturn;
 		}
-		return maxbin;
-	}
-	
-	public static void main(String[] args) {
-		double centerFreq = 785.0;
-		double sampleRate = 8000;
-		short[] data = new short[256];
-		for (int halfstep = -12; halfstep < 12; halfstep += 5) {
-			double freqLeft = centerFreq * Math.pow(2.0, (double)halfstep / 12.0);
-			double freqRight = centerFreq * Math.pow(2.0, (double)(halfstep+5) / 12.0);
-			int binLeft = (int)((freqLeft / sampleRate)*data.length);
-			int binRight = (int)((freqRight / sampleRate)*data.length);
-			System.out.println(freqLeft + " - " + freqRight + " : " + binLeft + " - " + binRight);
-		}
-	}
-	
-}
+};
