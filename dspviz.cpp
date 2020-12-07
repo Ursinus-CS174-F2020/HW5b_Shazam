@@ -2,19 +2,19 @@
 
 /**
  * @param S The spectrogram
- * @param fftlen Number of samples in fft
+ * @param maxBin: Max frequency up to which to plot results
  * @param NWin Number of windows
- * @param hScale: Factor by which to shrink height
- * @param wScale: Factor by which to shrink width
+ * @param hScale: Factor by which to scale height
+ * @param wScale: Factor by which to scale width
  * @return Canvas with fft image
  */
-BMP plotSpectrogram(double** S, int fftlen, int NWin, int hScale, int wScale) {
-    int H = fftlen/hScale;
-    int W = NWin/wScale;
+BMP plotSpectrogram(double** S, int maxBin, int NWin, int hScale, int wScale) {
+    int H = maxBin*hScale;
+    int W = NWin*wScale;
     BMP canvas(W, H);
     double min = S[0][0];
     double max = S[0][0];
-    for (int i = 0; i < fftlen; i++) {
+    for (int i = 0; i < maxBin; i++) {
         for (int j = 0; j < NWin; j++) {
             double s = S[i][j];
             if (s < min) {
@@ -25,17 +25,14 @@ BMP plotSpectrogram(double** S, int fftlen, int NWin, int hScale, int wScale) {
             }
         }
     }
-    for (int i = 0; i < H; i++) {
-        for (int j = 0; j < W; j++) {
-            double avg = 0.0;
+    for (int i = 0; i < maxBin; i++) {
+        for (int j = 0; j < NWin; j++) {
+            uint8_t val = (uint8_t)(255*S[i][j]/(max-min));
             for (int di = 0; di < hScale; di++) {
                 for (int dj = 0; dj < wScale; dj++) {
-                    avg += S[i*hScale+di][j*wScale+dj];
+                    canvas.set_pixel(j*wScale+dj, i*hScale+di, val, val, val, 0xFF);
                 }
             }
-            avg /= hScale*wScale;
-            uint8_t val = (uint8_t)(255*avg/(max-min));
-            canvas.set_pixel(j, i, val, val, val, 0xFF);
         }
     }
     return canvas;

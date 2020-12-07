@@ -258,9 +258,8 @@ cdouble** DSP::stft(short* sig, int N, int win, int hop, bool useWindow, int* NW
  */
 double** DSP::specgram(short* sig, int N, int win, int hop, bool useWindow, int* NWin) {
 	cdouble** SComplex = stft(sig, N, win, hop, useWindow, NWin);
-	int swin = win/2+1;
-	double** S = new double*[swin];
-	for (int i = 0; i < swin; i++) {
+	double** S = new double*[win];
+	for (int i = 0; i < win; i++) {
 		S[i] = new double[*NWin];
 		for (int j = 0; j < *NWin; j++) {
 			S[i][j] = abs(SComplex[i][j]);
@@ -289,8 +288,7 @@ void deleteSTFT(cdouble** S, int win) {
  * @param win Window length
  */
 void deleteSpecgram(double** S, int win) {
-	int swin = win/2+1;
-	for (int i = 0; i < swin; i++) {
+	for (int i = 0; i < win; i++) {
 		delete[] S[i];
 	}
 	delete[] S;
