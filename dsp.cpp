@@ -81,7 +81,7 @@ void DSP::initWindow(int fftsize) {
 	hannwindow = new double[N];
 	for (int n = 0; n < N; n++) {
 		double angle = 2.0*M_PI * n / (double)(N - 1);
-		//Do a Hamming hannwindow for now
+		//Do a hann window for now
 		hannwindow[n] = 0.54 - 0.46*cos(angle);
 	}
 }
@@ -193,16 +193,17 @@ cdouble* DSP::ifft(cdouble* sig, int N) {
  * Helper function to create a complex array out of an array of 
  * real amplitude samples
  * @param data An array of shorts for the audio data
+ * @param N Total number of samples in data
  * @param start Index to start in the array
  * @param len Length to go in the array
  * @param useWindow Whether to use the window
  */
-cdouble* DSP::toWindowedComplexArray(short* data, int start, int len, bool useWindow) {
-	int N = 1 << getClosestPowerOf2(len);
+cdouble* DSP::toWindowedComplexArray(short* data, int N, int start, int len, bool useWindow) {
+	int M = 1 << getClosestPowerOf2(len);
 	cdouble* toReturn = new cdouble[N];
 	//Make a complex array out of the real array
-	for (int i = 0; i < N; i++) {
-		if (i < len) {
+	for (int i = 0; i < M; i++) {
+		if (i < len && start+i < N) {
 			short value = data[start + i];
 			toReturn[i] = cdouble((double)value, 0.0);
 			if (useWindow) {
@@ -215,4 +216,82 @@ cdouble* DSP::toWindowedComplexArray(short* data, int start, int len, bool useWi
 		}
 	}
 	return toReturn;
+}
+
+/**
+ * Perform a short-time fourier transform on a bunch of samples
+ * @param sig Samples in the signal
+ * @param N Length of signal
+ * @param win Window length (Assumed to be a power of 2)
+ * @param hop Hop length
+ * @param useWindow Whether to use the window
+ * @param NWin Number of windows (returned by reference)
+ * @return A win x NWin 2D array of complex doubles
+ */
+cdouble** DSP::stft(short* sig, int N, int win, int hop, bool useWindow, int* NWin) {
+	*NWin = 1 + round((N-win)/(double)hop);
+	cdouble** S = new cdouble*[win];
+	for (int i = 0; i < win; i++) {
+		S[i] = new cdouble[*NWin];
+	}
+	for (int j = 0; j < *NWin; j++) {
+		cdouble* xj = toWindowedComplexArray(sig, N, j*hop, win, useWindow);
+		cdouble* fftj = fft(xj, win);
+		for (int i = 0; i < win; i++) {
+			S[i][j] = fftj[i];
+		}
+		delete[] fftj;
+		delete[] xj;
+	}
+	return S;
+}
+
+/**
+ * Perform a magnitude short-time fourier transform on a bunch of samples
+ * @param sig Samples in the signal
+ * @param N Length of signal
+ * @param win Window length of STFT (Assumed to be a power of 2)
+ * @param hop Hop length
+ * @param useWindow Whether to use the window
+ * @param NWin Number of windows (returned by reference)
+ * @return A win x NWin 2D array of complex doubles
+ */
+double** DSP::specgram(short* sig, int N, int win, int hop, bool useWindow, int* NWin) {
+	cdouble** SComplex = stft(sig, N, win, hop, useWindow, NWin);
+	int swin = win/2+1;
+	double** S = new double*[swin];
+	for (int i = 0; i < swin; i++) {
+		S[i] = new double[*NWin];
+		for (int j = 0; j < *NWin; j++) {
+			S[i][j] = abs(SComplex[i][j]);
+		}
+		delete[] SComplex[i];
+	}
+	delete[] SComplex;
+	return S;
+}
+
+/**
+ * Free the memory associated to an STFT
+ * @param S Spectrogram
+ * @param win Window length
+ */
+void deleteSTFT(cdouble** S, int win) {
+	for (int i = 0; i < win; i++) {
+		delete[] S[i];
+	}
+	delete[] S;
+}
+
+/**
+ * Free the memory associated to a spectrogram
+ * @param S Spectrogram
+ * @param win Window length
+ */
+void deleteSpecgram(double** S, int win) {
+	int swin = win/2+1;
+	for (int i = 0; i < swin; i++) {
+		delete[] S[i];
+	}
+	delete[] S;
 }

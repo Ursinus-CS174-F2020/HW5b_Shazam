@@ -3,6 +3,8 @@
  * Purpose: Vanilla C++ implementation of the Fast-Fourier Transform
  * and Short-Time Fourier Transform
  */
+#ifndef DSP_H
+#define DSP_H
 
 #include <complex>
 #include <iostream>
@@ -73,10 +75,48 @@ class DSP {
 		 * Helper function to create a complex array out of an array of 
 		 * real amplitude samples
 		 * @param data An array of shorts for the audio data
+		 * @param N Total number of samples in data
 		 * @param start Index to start in the array
 		 * @param len Length to go in the array
 		 * @param useWindow Whether to use the window
 		 */
-		cdouble* toWindowedComplexArray(short* data, int start, int len, bool useWindow);
+		cdouble* toWindowedComplexArray(short* data, int N, int start, int len, bool useWindow);
+
+		/**
+		 * Perform a short-time fourier transform on a bunch of samples
+		 * @param sig Samples in the signal
+		 * @param N Length of signal
+		 * @param win Window length
+		 * @param hop Hop length
+		 * @param useWindow Whether to use the window
+		 * @param NWin Number of windows (returned by reference)
+		 */
+		cdouble** stft(short* sig, int N, int win, int hop, bool useWindow, int* NWin);
+
+		/**
+		 * Perform a magnitude short-time fourier transform on a bunch of samples
+		 * @param sig Samples in the signal
+		 * @param N Length of signal
+		 * @param win Window length
+		 * @param hop Hop length
+		 * @param useWindow Whether to use the window
+		 * @param NWin Number of windows (returned by reference)
+		 */
+		double** specgram(short* sig, int N, int win, int hop, bool useWindow, int* NWin);
 };
 
+/**
+ * Free the memory associated to an STFT
+ * @param S STFT
+ * @param win Window length
+ */
+void deleteSTFT(cdouble** S, int win);
+
+/**
+ * Free the memory associated to a spectrogram
+ * @param S Spectrogram
+ * @param win Window length
+ */
+void deleteSpecgram(double** S, int win);
+
+#endif

@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <cstdint>
+#include <iostream>
 
 using namespace std;
 
@@ -13,7 +14,7 @@ using namespace std;
  * @param filename Path to file
  * @return Wave header
  */
-wav_hdr getAudioHeader(char* filename) {
+wav_hdr getAudioHeader(const char* filename) {
     wav_hdr wavHeader;
     FILE* wavFile = fopen(filename, "r");
     if (wavFile == NULL) {
@@ -32,7 +33,7 @@ wav_hdr getAudioHeader(char* filename) {
  * @param N Pointer to file size
  * @return Short array of audio samples
  */
-short* getAudio(char* filename, size_t* N) {
+short* getAudio(const char* filename, size_t* N) {
     short* ret = NULL;
     wav_hdr wavHeader;
     FILE* wavFile = fopen(filename, "r");
@@ -68,7 +69,6 @@ short* getAudio(char* filename, size_t* N) {
                 ret[i] = samples.at(i);
             }
         }
-
     }
     fclose(wavFile);
     return ret;
@@ -81,7 +81,7 @@ short* getAudio(char* filename, size_t* N) {
  * @param N Number of samples
  * @param waveHeader Header to wave file
  */
-void writeAudio(char* filename, short* arr, size_t N, wav_hdr wavHeader) {
+void writeAudio(const char* filename, short* arr, size_t N, wav_hdr wavHeader) {
     FILE* wavFile = fopen(filename, "w");
     fwrite(&wavHeader, 1, sizeof(wav_hdr), wavFile);
     fwrite(arr, 1, N*2, wavFile);

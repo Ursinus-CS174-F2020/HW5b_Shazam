@@ -1,5 +1,6 @@
 #ifndef AUDIO_H
 #define AUDIO_H
+
 #include "stdio.h"
 #include "audio.h"
 #include <iostream>
@@ -33,8 +34,8 @@ typedef struct  WAV_HEADER
 
 #define AUDIO_CHUNK_SIZE 1024
 
-wav_hdr getAudioHeader(char* filename);
-short* getAudio(char* filename, size_t* N);
-void writeAudio(char* filename, short* arr, size_t N, wav_hdr waveHeader);
+wav_hdr getAudioHeader(const char* filename);
+short* getAudio(const char* filename, size_t* N);
+void writeAudio(const char* filename, short* arr, size_t N, wav_hdr waveHeader);
 
 #endif
