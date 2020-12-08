@@ -114,9 +114,9 @@ class DSP {
 /**
  * Free the memory associated to an STFT
  * @param S STFT
- * @param win Window length
+ * @param NWin Window length
  */
-void deleteSTFT(cdouble** S, int win);
+void deleteSTFT(cdouble** S, int NWin);
 
 /**
  * Free the memory associated to a spectrogram
