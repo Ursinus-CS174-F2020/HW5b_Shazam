@@ -92,7 +92,7 @@ void DSP::initWindow(int fftsize) {
  * @param N Length of array (assumed to be power of 2)
  * @param inverse Whether this is a forward or inverse FFT
  */
-cdouble* DSP::performfft(cdouble* toReturn, int N, int inverse) {
+void DSP::performfft(cdouble* toReturn, int N, int inverse) {
 	rearrange(toReturn, N);
 	//Do the trivial FFT size of 2 first
 	for (int i = 0; i < N; i += 2) {
@@ -118,7 +118,6 @@ cdouble* DSP::performfft(cdouble* toReturn, int N, int inverse) {
 		}
 		Mindex++;
 	}
-	return toReturn;
 }
 	
 
@@ -144,11 +143,11 @@ DSP::~DSP() {
 /**
  * Implement the dft directly from the definition (used for speed comparison)
  * @param sig Complex signal on which to compute dft
+ * @param toReturn The array that will hold the fourier coefficients
  * @param N Length of signal
  * @return Complex DFT coefficients
  */
-cdouble* DSP::dft(cdouble* sig, int N) {
-	cdouble* toReturn = new cdouble[N];
+void DSP::dft(cdouble* sig, cdouble* toReturn, int N) {
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			double angle = -2.0 * M_PI * (double)i * (double)j / (double)N;
@@ -156,66 +155,63 @@ cdouble* DSP::dft(cdouble* sig, int N) {
 			toReturn[i] = coeff*sig[i];
 		}
 	}
-	return toReturn;
 }
 
 /**
  * Perform the FFT on a complex signal
  * @param sig The signal
+ * @param toReturn The array that will hold the fourier coefficients
  * @param N Length of the signal (assumed to be power of 2)
  * @return An N-length array with FFT coefficients
  */
-cdouble* DSP::fft(cdouble* sig, int N) {
-	cdouble* toReturn = new cdouble[N];
+void DSP::fft(cdouble* sig, cdouble* toReturn, int N) {
 	for (int i = 0; i < N; i++) {
 		toReturn[i] = sig[i];
 	}
-	return performfft(toReturn, N, FFT_FORWARD);	
+	performfft(toReturn, N, FFT_FORWARD);	
 }
 
 /**
  * Perform the inverse FFT on an array of complex FFT coefficients
  * @param sig The FFT coefficients
+ * @param toReturn The array that will hold the complex time series
  * @param N Length of the FFT coefficients (assumed to be power of 2)
  * @return An N-length array with FFT coefficients
  */
-cdouble* DSP::ifft(cdouble* sig, int N) {
-	cdouble* toReturn = new cdouble[N];
+void DSP::ifft(cdouble* sig, cdouble* toReturn, int N) {
 	for (int i = 0; i < N; i++) {
 		toReturn[i] = sig[i];
 		//Scale by 1/N for inverse FFT
 		toReturn[i] *= cdouble(1.0/(double)N, 0);
 	}
-	return performfft(toReturn, N, FFT_INVERSE);
+	performfft(toReturn, N, FFT_INVERSE);
 }
 
 /**
  * Helper function to create a complex array out of an array of 
  * real amplitude samples
  * @param data An array of shorts for the audio data
+ * @param res Array holding the result
  * @param N Total number of samples in data
  * @param start Index to start in the array
- * @param len Length to go in the array
+ * @param win Length of the window
  * @param useWindow Whether to use the window
  */
-cdouble* DSP::toWindowedComplexArray(short* data, int N, int start, int len, bool useWindow) {
-	int M = 1 << getClosestPowerOf2(len);
-	cdouble* toReturn = new cdouble[N];
+void DSP::toWindowedComplexArray(short* data, cdouble* res, int N, int start, int win, bool useWindow) {
 	//Make a complex array out of the real array
-	for (int i = 0; i < M; i++) {
-		if (i < len && start+i < N) {
+	for (int i = 0; i < win; i++) {
+		if (start+i < N) {
 			short value = data[start + i];
-			toReturn[i] = cdouble((double)value, 0.0);
+			res[i] = cdouble((double)value, 0.0);
 			if (useWindow) {
-				toReturn[i] *= hannwindow[i];
+				res[i] *= hannwindow[i];
 			}
 		}
 		else {
 			//Zero pad if not a power of 2
-			toReturn[i] = cdouble(0.0, 0.0);
+			res[i] = cdouble(0.0, 0.0);
 		}
 	}
-	return toReturn;
 }
 
 /**
@@ -226,23 +222,23 @@ cdouble* DSP::toWindowedComplexArray(short* data, int N, int start, int len, boo
  * @param hop Hop length
  * @param useWindow Whether to use the window
  * @param NWin Number of windows (returned by reference)
- * @return A win x NWin 2D array of complex doubles
+ * @return An NWin x win 2D array of complex doubles
  */
 cdouble** DSP::stft(short* sig, int N, int win, int hop, bool useWindow, int* NWin) {
 	*NWin = 1 + round((N-win)/(double)hop);
-	cdouble** S = new cdouble*[win];
-	for (int i = 0; i < win; i++) {
-		S[i] = new cdouble[*NWin];
+	cdouble** S = new cdouble*[*NWin];
+	for (int i = 0; i < *NWin; i++) {
+		S[i] = new cdouble[win];
 	}
-	for (int j = 0; j < *NWin; j++) {
-		cdouble* xj = toWindowedComplexArray(sig, N, j*hop, win, useWindow);
-		cdouble* fftj = fft(xj, win);
-		for (int i = 0; i < win; i++) {
-			S[i][j] = fftj[i];
+	cdouble* ffti = new cdouble[win];
+	for (int i = 0; i < *NWin; i++) {
+		toWindowedComplexArray(sig, S[i], N, i*hop, win, useWindow);
+		fft(S[i], ffti, win);
+		for (int j = 0; j < win; j++) {
+			S[i][j] = ffti[j];
 		}
-		delete[] fftj;
-		delete[] xj;
 	}
+	delete[] ffti;
 	return S;
 }
 
@@ -262,7 +258,7 @@ double** DSP::specgram(short* sig, int N, int win, int hop, bool useWindow, int*
 	for (int i = 0; i < win; i++) {
 		S[i] = new double[*NWin];
 		for (int j = 0; j < *NWin; j++) {
-			S[i][j] = abs(SComplex[i][j]);
+			S[i][j] = abs(SComplex[j][i]);
 		}
 		delete[] SComplex[i];
 	}

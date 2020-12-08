@@ -40,7 +40,7 @@ class DSP {
 		 * @param N Length of array (assumed to be power of 2)
 		 * @param inverse Whether this is a forward or inverse FFT
 		 */
-		cdouble* performfft(cdouble* toReturn, int N, int inverse);
+		void performfft(cdouble* toReturn, int N, int inverse);
 	
 	public:
 		cdouble fftres;
@@ -50,37 +50,41 @@ class DSP {
 		/**
 		 * Implement the dft directly from the definition (used for speed comparison)
 		 * @param sig Complex signal on which to compute dft
+		 * @param toReturn The array that will hold the fourier coefficients
 		 * @param N Length of signal
 		 * @return Complex DFT coefficients
 		 */
-		cdouble* dft(cdouble* sig, int N);
+		void dft(cdouble* sig, cdouble* toReturn, int N);
 
 		/**
 		 * Perform the FFT on a complex signal
 		 * @param sig The signal
+		 * @param toReturn The array that will hold the fourier coefficients
 		 * @param N Length of the signal (assumed to be power of 2)
 		 * @return An N-length array with FFT coefficients
 		 */
-		cdouble* fft(cdouble* sig, int N);
+		void fft(cdouble* sig, cdouble* toReturn, int N);
 	
 		/**
 		 * Perform the inverse FFT on an array of complex FFT coefficients
 		 * @param sig The FFT coefficients
+		 * @param toReturn The array that will hold the complex time series
 		 * @param N Length of the FFT coefficients (assumed to be power of 2)
 		 * @return An N-length array with FFT coefficients
 		 */
-		cdouble* ifft(cdouble* sig, int N);
+		void ifft(cdouble* sig, cdouble* toReturn, int N);
 		
 		/**
 		 * Helper function to create a complex array out of an array of 
 		 * real amplitude samples
 		 * @param data An array of shorts for the audio data
+		 * @param res Array holding the result
 		 * @param N Total number of samples in data
 		 * @param start Index to start in the array
-		 * @param len Length to go in the array
+		 * @param win Length of the window
 		 * @param useWindow Whether to use the window
 		 */
-		cdouble* toWindowedComplexArray(short* data, int N, int start, int len, bool useWindow);
+		void toWindowedComplexArray(short* data, cdouble* res, int N, int start, int win, bool useWindow);
 
 		/**
 		 * Perform a short-time fourier transform on a bunch of samples
@@ -90,6 +94,7 @@ class DSP {
 		 * @param hop Hop length
 		 * @param useWindow Whether to use the window
 		 * @param NWin Number of windows (returned by reference)
+		 * @return An NWin x win 2D array of complex doubles
 		 */
 		cdouble** stft(short* sig, int N, int win, int hop, bool useWindow, int* NWin);
 
@@ -101,6 +106,7 @@ class DSP {
 		 * @param hop Hop length
 		 * @param useWindow Whether to use the window
 		 * @param NWin Number of windows (returned by reference)
+		 * @return A win x NWin 2D array of complex doubles
 		 */
 		double** specgram(short* sig, int N, int win, int hop, bool useWindow, int* NWin);
 };
