@@ -94,7 +94,7 @@ vector<Fingerprint>* getFingerprints(vector<Anchor>* anchors, int dcenter, int w
 void plotAnchors(BMP& canvas, vector<Anchor>* anchors, int scale) {
     for (size_t i = 0; i < anchors->size(); i++) {
         Anchor a = anchors->at(i);
-        canvas.plotCircle(a.win*scale+scale/2, a.freq*scale+scale/2, scale, 0xFF, 0, 0);
+        canvas.plotCircle(a.win*scale+scale/2, a.freq*scale+scale/2, scale, 0xFF, 0xFF, 0);
     }
 }
 
