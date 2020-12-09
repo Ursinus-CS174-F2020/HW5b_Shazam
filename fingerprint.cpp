@@ -44,8 +44,8 @@ Cloneable* Fingerprint::clone() {
  * @param S Spectrogram
  * @param i Frequency index
  * @param j Time index
- * @param maxFreq Maximum frequency to consider
- * @param nwin Number of windows in time
+ * @param maxFreq Maximum frequency to consider (number of rows in S)
+ * @param nwin Number of windows in time (number of columns in S)
  * @param freqWin Half-length of window in frequency
  * @param timeWin Half-length of window in time
  * @return true if this element is greater than all elements in the window, false otherwise
@@ -59,8 +59,8 @@ bool isMax(double** S, int i, int j, int maxFreq, int nwin, int freqWin, int tim
 /**
  * Figure out whether a particular point is a max
  * @param S Spectrogram
- * @param maxFreq Maximum frequency to consider
- * @param nwin Number of windows in time
+ * @param maxFreq Maximum frequency to consider (number of rows in S)
+ * @param nwin Number of windows in time (number of columns in S)
  * @param freqWin Half-length of window in frequency
  * @param timeWin Half-length of window in time
  * @param thresh Minimum value in spectrogram to consider
