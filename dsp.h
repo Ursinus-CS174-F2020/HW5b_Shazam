@@ -15,6 +15,7 @@ using namespace std;
 typedef complex<double> cdouble;
 #define FFT_FORWARD 0
 #define FFT_INVERSE 1
+#define PI 3.1415926535897932384626433832795
 
 class DSP {
 	private:

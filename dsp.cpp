@@ -64,7 +64,7 @@ void DSP::initCoeffs(int fftsize) {
 		W[level][0] = new cdouble[FFTSize >> 1];
 		W[level][1] = new cdouble[FFTSize >> 1];
 		for (int i = 0; i < FFTSize >> 1; i++) {
-			double iangle = (double)i * 2.0 * M_PI / (double)FFTSize;
+			double iangle = (double)i * 2.0 * PI / (double)FFTSize;
 			double fangle = (-1.0) * iangle;
 			W[level][FFT_FORWARD][i] = cdouble(cos(fangle), sin(fangle));
 			W[level][FFT_INVERSE][i] = cdouble(cos(iangle), sin(iangle)); 
@@ -80,7 +80,7 @@ void DSP::initWindow(int fftsize) {
 	int N = fftsize;
 	hannwindow = new double[N];
 	for (int n = 0; n < N; n++) {
-		double angle = 2.0*M_PI * n / (double)(N - 1);
+		double angle = 2.0*PI * n / (double)(N - 1);
 		//Do a hann window for now
 		hannwindow[n] = 0.54 - 0.46*cos(angle);
 	}
@@ -150,7 +150,7 @@ DSP::~DSP() {
 void DSP::dft(cdouble* sig, cdouble* toReturn, int N) {
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
-			double angle = -2.0 * M_PI * (double)i * (double)j / (double)N;
+			double angle = -2.0 * PI * (double)i * (double)j / (double)N;
 			cdouble coeff(cos(angle), sin(angle));
 			toReturn[i] = coeff*sig[i];
 		}
