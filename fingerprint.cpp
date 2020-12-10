@@ -64,7 +64,7 @@ bool isMax(double** S, int i, int j, int maxFreq, int nwin, int freqWin, int tim
  * @param freqWin Half-length of window in frequency
  * @param timeWin Half-length of window in time
  * @param thresh Minimum value in spectrogram to consider
- * @return true if this element is greater than all elements in the window, false otherwise
+ * @return A vector of all fingerprints in the spectrogram
  */
 vector<Anchor>* findAnchors(double** S, int maxFreq, int nwin, int freqWin, int timeWin, double thresh) {
     vector<Anchor>* anchors = new vector<Anchor>();
