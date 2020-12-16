@@ -42,8 +42,8 @@ Cloneable* Fingerprint::clone() {
 /**
  * Figure out whether a particular point is a max
  * @param S Spectrogram
- * @param i Frequency index
- * @param j Time index
+ * @param i Frequency index (row in S)
+ * @param j Time index (column in S)
  * @param maxFreq Maximum frequency to consider (number of rows in S)
  * @param nwin Number of windows in time (number of columns in S)
  * @param freqWin Half-length of window in frequency
@@ -240,7 +240,7 @@ void SongData::processAudio() {
  * @param songs Array of info for songs in the database
  * @param NSongs Number of songs in the database
  */
-songInfo SongData::queryDatabase(HashTable* h, songInfo* songs, int NSongs) {
+songInfo SongData::queryDatabase(HashTable* db, songInfo* songs, int NSongs) {
     vector<HashTable*> histograms;
     int maxCount = 0;
     int maxIndex = 0;
