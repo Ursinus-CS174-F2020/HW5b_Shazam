@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     int NSongs = 6;
     songInfo* songs;
     time(&tic);
-    HashTable* db = loadDatabase(NSongs, 1000, &songs);
+    HashTable* db = loadDatabase(NSongs, 1000000, &songs);
     time(&toc);
     seconds = difftime(toc, tic);
     printf("%.g seconds elapsed loading database\n", seconds);
